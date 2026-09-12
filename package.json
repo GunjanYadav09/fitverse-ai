@@ -2,6 +2,9 @@
   "name": "fitverse-ai-website",
   "version": "1.0.0",
   "description": "FitVerse AI - Your Personal AI Health Companion",
+  "allowScripts": {
+    "sharp": true
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
