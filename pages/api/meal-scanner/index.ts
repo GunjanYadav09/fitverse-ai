@@ -13,8 +13,19 @@ export const config = {
   },
 };
 
-// Comprehensive food database with accurate nutrition data
-const FOOD_DATABASE: any = {
+// ✅ FIXED: Added proper type + removed duplicate keys
+interface FoodData {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sugar: number;
+  sodium: number;
+  healthScore: number;
+}
+
+const FOOD_DATABASE: Record<string, FoodData> = {
   'pizza': { calories: 285, protein: 12, carbs: 35, fat: 10, fiber: 2, sugar: 3, sodium: 600, healthScore: 60 },
   'cheese pizza': { calories: 285, protein: 12, carbs: 35, fat: 10, fiber: 2, sugar: 3, sodium: 600, healthScore: 60 },
   'pepperoni pizza': { calories: 300, protein: 14, carbs: 33, fat: 12, fiber: 2, sugar: 3, sodium: 700, healthScore: 55 },
@@ -52,9 +63,6 @@ const FOOD_DATABASE: any = {
   'cereal': { calories: 378, protein: 6, carbs: 80, fat: 2, fiber: 6, sugar: 10, sodium: 200, healthScore: 55 },
   'pancake': { calories: 227, protein: 6, carbs: 30, fat: 9, fiber: 1, sugar: 6, sodium: 400, healthScore: 45 },
   'waffle': { calories: 310, protein: 7, carbs: 35, fat: 16, fiber: 1, sugar: 8, sodium: 450, healthScore: 40 },
-  'burger': { calories: 354, protein: 16, carbs: 41, fat: 15, fiber: 2, sugar: 5, sodium: 500, healthScore: 45 },
-  'fries': { calories: 312, protein: 3.4, carbs: 41, fat: 15, fiber: 3.8, sugar: 0.3, sodium: 210, healthScore: 40 },
-  'sandwich': { calories: 250, protein: 12, carbs: 30, fat: 10, fiber: 3, sugar: 4, sodium: 500, healthScore: 60 },
   'sushi': { calories: 142, protein: 6, carbs: 28, fat: 1, fiber: 1, sugar: 3, sodium: 300, healthScore: 70 },
   'taco': { calories: 226, protein: 12, carbs: 20, fat: 11, fiber: 3, sugar: 2, sodium: 400, healthScore: 55 },
   'burrito': { calories: 350, protein: 15, carbs: 40, fat: 14, fiber: 6, sugar: 3, sodium: 600, healthScore: 50 },
@@ -121,7 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Step 1: If image is provided, use Google Cloud Vision API to detect food
       if (imageBase64 && imageBase64.length > 0 && !foodName) {
         try {
-          const API_KEY = 'AIzaSyDGZxN9uS3CPg5GHfWmLF6lB1OE4WxyM2Q';
+          const API_KEY = process.env.GOOGLE_VISION_API_KEY || 'AIzaSyDGZxN9uS3CPg5GHfWmLF6lB1OE4WxyM2Q';
           
           const base64Image = imageBase64.includes('base64,') 
             ? imageBase64.split('base64,')[1] 
@@ -145,7 +153,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const labels = visionResponse.data.responses[0]?.labelAnnotations || [];
           const objects = visionResponse.data.responses[0]?.localizedObjectAnnotations || [];
           
-          // Get all labels
           const allLabels = labels.map((l: any) => l.description.toLowerCase());
           const objectNames = objects.map((o: any) => o.name.toLowerCase());
           
@@ -153,17 +160,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           console.log('All detected labels:', detectedLabels);
 
-          // Check if any detected label matches our food database
           const foodKeys = Object.keys(FOOD_DATABASE);
-          let matchedFood = null;
+          let matchedFood: string | null = null;
           
           for (const label of detectedLabels) {
-            // Check exact match
             if (foodKeys.includes(label)) {
               matchedFood = label;
               break;
             }
-            // Check partial match
             for (const key of foodKeys) {
               if (label.includes(key) || key.includes(label)) {
                 matchedFood = key;
@@ -177,7 +181,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             searchTerm = matchedFood;
             console.log('Detected food from image:', searchTerm);
           } else {
-            // Use the first food-related label
             const foodKeywords = ['food', 'dish', 'meal', 'fruit', 'vegetable', 'meat', 'pasta', 'rice', 'bread', 
               'cake', 'pizza', 'burger', 'sandwich', 'salad', 'soup', 'curry', 'noodles', 'chicken', 'fish', 
               'egg', 'cheese', 'milk', 'juice', 'smoothie', 'snack', 'dessert'];
@@ -263,7 +266,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const sugar = nutriments.sugars_100g || nutriments.sugars || 0;
             const sodium = nutriments.sodium_100g || nutriments.sodium || 0;
 
-            const gradeScore: any = {
+            const gradeScore: Record<string, number> = {
               'a': 85,
               'b': 70,
               'c': 55,
